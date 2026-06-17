@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Email Automation Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar navigation: anchor links switch users between setup and runtime sections. -->
+    <aside class="sidebar" aria-label="Dashboard navigation">
+      <div class="brand-mark">✉️</div>
+      <nav>
+        <a href="#gmail" class="nav-link active">Setup Gmail API</a>
+        <a href="#openai" class="nav-link">Configure OpenAI Key</a>
+        <a href="#sheets" class="nav-link">Connect Google Sheets</a>
+        <a href="#run" class="nav-link">Run Automation</a>
+        <a href="#logs" class="nav-link">Logs / Output</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard">
+      <!-- Header section: project overview and high-level status cards. -->
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Control Panel</p>
+          <h1>AI Email Automation Dashboard</h1>
+          <p class="hero-copy">
+            Configure Gmail, OpenAI, and Google Sheets credentials, then simulate
+            the email summarization workflow before connecting a backend.
+          </p>
+        </div>
+        <div class="status-card">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Frontend ready</strong>
+            <small>Backend integration pending</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <!-- Gmail setup section: local placeholder for OAuth client credentials. -->
+        <article class="panel" id="gmail">
+          <div class="panel-header">
+            <span class="step">01</span>
+            <div>
+              <h2>Setup Gmail API</h2>
+              <p>Prepare OAuth credentials for unread email access.</p>
+            </div>
+          </div>
+          <ol class="instructions">
+            <li>Enable Gmail API in Google Cloud Console.</li>
+            <li>Create an OAuth desktop client.</li>
+            <li>Upload or note the downloaded credentials JSON.</li>
+          </ol>
+          <label for="gmailCredentials">Gmail credentials placeholder</label>
+          <input id="gmailCredentials" type="file" accept="application/json,.json" />
+          <p class="hint">The browser stores only the file name for now. Later, send the file to a secure backend API.</p>
+          <button class="secondary-button" data-save="gmail">Save Gmail Setup</button>
+        </article>
+
+        <!-- OpenAI setup section: stores a masked API key locally until backend secrets are added. -->
+        <article class="panel" id="openai">
+          <div class="panel-header">
+            <span class="step">02</span>
+            <div>
+              <h2>Configure OpenAI Key</h2>
+              <p>Add the API key used for email summaries and task extraction.</p>
+            </div>
+          </div>
+          <ol class="instructions">
+            <li>Create an OpenAI API key.</li>
+            <li>Paste it below to test the dashboard flow.</li>
+            <li>Move key storage to a backend secret manager before production.</li>
+          </ol>
+          <label for="openaiKey">OpenAI API key</label>
+          <input id="openaiKey" type="password" autocomplete="off" placeholder="sk-..." />
+          <p class="hint">For production, never expose this key in client-side code.</p>
+          <button class="secondary-button" data-save="openai">Save OpenAI Key</button>
+        </article>
+
+        <!-- Google Sheets setup section: stores target spreadsheet metadata. -->
+        <article class="panel" id="sheets">
+          <div class="panel-header">
+            <span class="step">03</span>
+            <div>
+              <h2>Connect Google Sheets</h2>
+              <p>Choose where summaries and tasks should be saved.</p>
+            </div>
+          </div>
+          <ol class="instructions">
+            <li>Create a Google Sheet with columns Date, Subject, Summary, and Tasks.</li>
+            <li>Copy the spreadsheet ID from the Sheet URL.</li>
+            <li>Save the ID here for the future backend worker.</li>
+          </ol>
+          <label for="sheetId">Google Sheets ID</label>
+          <input id="sheetId" type="text" placeholder="1AbC...XYZ" />
+          <button class="secondary-button" data-save="sheets">Save Sheet ID</button>
+        </article>
+
+        <!-- Run section: simulates execution now; replace simulateAutomation with backend API calls later. -->
+        <article class="panel run-panel" id="run">
+          <div class="panel-header">
+            <span class="step">04</span>
+            <div>
+              <h2>Run Automation</h2>
+              <p>Simulate the Gmail → OpenAI → Sheets pipeline.</p>
+            </div>
+          </div>
+          <div class="run-summary">
+            <div><strong id="configStatus">Configuration pending</strong><small>Save all setup sections to unlock confidence.</small></div>
+          </div>
+          <button class="primary-button" id="runAutomation">Run Automation</button>
+          <div class="spinner hidden" id="spinner" aria-label="Automation running"></div>
+          <ul class="mock-output" id="mockOutput" aria-live="polite"></ul>
+        </article>
+
+        <!-- Logs section: timestamped local log history for setup saves and simulated runs. -->
+        <article class="panel logs-panel" id="logs">
+          <div class="panel-header">
+            <span class="step">05</span>
+            <div>
+              <h2>Logs / Output</h2>
+              <p>Review dashboard actions and automation results.</p>
+            </div>
+          </div>
+          <div class="log-actions">
+            <button class="secondary-button" id="clearLogs">Clear Logs</button>
+          </div>
+          <div class="logs" id="logsList" aria-live="polite"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
