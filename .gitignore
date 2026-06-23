@@ -1,0 +1,9 @@
+# Local secrets and OAuth tokens
+credentials.json
+token.json
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.venv/
