@@ -1,60 +1,121 @@
-# Email Task Automation
+# AI Email Automation Dashboard
 
-Extract unread Gmail messages, summarize them with the OpenAI API, save the results to Google Sheets, and mark processed emails as read.
+A static, GitHub Pages-ready dashboard for controlling an AI Email Automation system. The current UI stores setup values in `localStorage`, simulates the automation run, and preserves timestamped logs locally. A backend worker can be connected later to run the real Gmail → OpenAI → Google Sheets workflow.
 
-## What it does
+## Dashboard features
 
-1. Connects to the Gmail API and finds the latest unread inbox emails.
-2. Extracts each email's subject, body text, and date.
-3. Sends the email content to the OpenAI API for:
-   - A concise 3-4 line summary
-   - Actionable tasks as bullet points
-4. Appends the result to Google Sheets with these columns:
-   - Date
-   - Email Subject
-   - Summary
-   - Tasks
-5. Marks the email as read after the row is successfully saved.
+- Dark, responsive dashboard UI with a header and sidebar navigation.
+- Setup sections for:
+  - Gmail API credentials placeholder
+  - OpenAI API key input
+  - Google Sheets ID input
+  - Automation run controls
+  - Logs / output history
+- Save buttons for setup values using browser `localStorage`.
+- Simulated automation run with loading spinner and mock output:
+  - `Fetched 5 emails`
+  - `Summarized successfully`
+  - `Tasks saved`
+- Timestamped logs that persist in `localStorage`.
+- Plain HTML, CSS, and JavaScript with no heavy frontend framework.
 
-## Project files
+## Project structure
 
-- `email_task_automation.py` - main automation script
-- `requirements.txt` - Python dependencies
-- `README.md` - setup and usage guide
+```text
+index.html
+style.css
+script.js
+email_task_automation.py
+requirements.txt
+README.md
+```
 
-## Prerequisites
+The static dashboard uses:
 
-- Python 3.10+
-- An OpenAI API key
-- A Google Cloud project with Gmail API and Google Sheets API enabled
-- OAuth desktop app credentials downloaded as `credentials.json`
-- A Google Sheet where the authenticated Google account can edit rows
+- `index.html` for the page structure and dashboard sections.
+- `style.css` for the dark responsive layout.
+- `script.js` for localStorage persistence, simulated runs, and dynamic logs.
 
-Google's Python quickstarts use the Google API client libraries and OAuth flow for local testing. The OpenAI Python SDK uses `OPENAI_API_KEY` from the environment unless passed explicitly.
+The existing Python script can be used as a starting point for a future backend worker.
 
-## Google setup
+## Run locally
 
-1. Create or open a Google Cloud project.
-2. Enable both APIs:
-   - Gmail API
-   - Google Sheets API
-3. Configure the OAuth consent screen.
-4. Create OAuth Client ID credentials for a **Desktop app**.
-5. Download the OAuth JSON file and save it in this project as `credentials.json`.
-6. Create a Google Sheet and add a tab named `Email Tasks`.
-7. Add this header row to columns A-D:
+Open `index.html` directly in your browser, or serve the folder locally:
+
+```bash
+python -m http.server 8000
+```
+
+Then visit:
+
+```text
+http://localhost:8000
+```
+
+
+## Validate before opening a PR
+
+Run these checks before creating or updating a PR:
+
+```bash
+node --check script.js
+python -m py_compile email_task_automation.py
+python tools/validate_static_site.py
+```
+
+The validation script confirms that the GitHub Pages entrypoint and local assets exist and that no unresolved merge conflict markers are present in committed text files.
+
+## Deploy on GitHub Pages
+
+1. Commit and push this repository to GitHub.
+2. Open the repository on GitHub.
+3. Go to **Settings → Pages**.
+4. Under **Build and deployment**, choose:
+   - Source: **Deploy from a branch**
+   - Branch: your deployment branch, usually `main`
+   - Folder: `/ (root)`
+5. Click **Save**.
+6. GitHub will publish the dashboard at a URL similar to:
 
    ```text
-   Date | Email Subject | Summary | Tasks
+   https://<your-username>.github.io/<repository-name>/
    ```
 
-8. Copy the spreadsheet ID from the Sheet URL:
+Because the dashboard is static and uses only `index.html`, `style.css`, and `script.js`, no build step is required.
 
-   ```text
-   https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
-   ```
+## Future backend integration
 
-## Installation
+The dashboard is currently frontend-only. To connect it to the real automation system later:
+
+1. Create a backend endpoint such as `POST /api/run-automation`.
+2. Move secret handling to the backend:
+   - Store `OPENAI_API_KEY` in server-side environment variables or a secret manager.
+   - Store Google OAuth tokens securely server-side.
+   - Avoid sending raw API keys or OAuth credentials from the browser in production.
+3. Replace the simulated run in `script.js` with a `fetch()` call to your backend endpoint.
+4. Have the backend run the Gmail/OpenAI/Sheets workflow and return structured status updates.
+5. Stream or poll backend logs and render them in the Logs / Output panel.
+
+Example future frontend call:
+
+```js
+const response = await fetch('/api/run-automation', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ sheetId: state.config.sheetId }),
+});
+const result = await response.json();
+```
+
+## Current security note
+
+This dashboard stores values in browser `localStorage` only for local prototyping. Do not store production OpenAI API keys or Google OAuth credentials in client-side storage. Use a backend service with server-side secrets before handling real accounts or sensitive emails.
+
+## Python automation prototype
+
+The repository also includes `email_task_automation.py`, which demonstrates the backend workflow for fetching unread Gmail messages, summarizing them with OpenAI, writing rows to Google Sheets, and marking processed messages as read.
+
+Install Python dependencies:
 
 ```bash
 python -m venv .venv
@@ -62,16 +123,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Environment variables
-
-Required:
+Required environment variables for the Python prototype:
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
 export GOOGLE_SHEET_ID="your-google-spreadsheet-id"
 ```
 
-Optional:
+Optional environment variables:
 
 ```bash
 export GOOGLE_CREDENTIALS_FILE="credentials.json"
@@ -83,32 +142,8 @@ export OPENAI_MODEL="gpt-4.1-mini"
 export LOG_LEVEL="INFO"
 ```
 
-## Usage
-
-Run the automation:
+Run the prototype:
 
 ```bash
 python email_task_automation.py
 ```
-
-On the first run, a browser-based Google OAuth flow opens. After authorization, the script writes `token.json` so future runs can refresh credentials automatically.
-
-## Error handling behavior
-
-- Missing environment variables fail fast with clear messages.
-- Google API failures are logged and do not mark emails as read.
-- OpenAI API failures are logged and do not mark emails as read.
-- Emails with no extractable body text are skipped and left unread.
-- Emails are marked as read only after successful Sheet append.
-
-## Scaling notes
-
-The script is intentionally modular:
-
-- `fetch_unread_message_ids` controls Gmail search and batching.
-- `parse_email` and `extract_body_text` isolate email parsing.
-- `analyze_email` isolates OpenAI prompting and response parsing.
-- `append_to_sheet` isolates persistence.
-- `process_email` handles one message end-to-end.
-
-For production use, consider adding scheduled execution, retries with backoff, structured JSON logging, secret management, and a service-specific deployment model.
