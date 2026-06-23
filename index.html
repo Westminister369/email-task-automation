@@ -110,8 +110,12 @@
             </div>
           </div>
           <div class="run-summary">
-            <div><strong id="configStatus">Configuration pending</strong><small>Save all setup sections to unlock confidence.</small></div>
+            <div><strong id="configStatus">Configuration pending</strong><small id="modeStatus">No backend URL saved; runs are simulations only.</small></div>
           </div>
+          <label for="backendUrl">Backend API URL</label>
+          <input id="backendUrl" type="url" placeholder="https://your-api.example.com/run-automation" />
+          <p class="hint">GitHub Pages cannot run Gmail/OpenAI/Sheets automation by itself. Add a backend URL to run the real workflow; leave blank for simulation mode.</p>
+          <button class="secondary-button" data-save="backend">Save Backend URL</button>
           <button class="primary-button" id="runAutomation">Run Automation</button>
           <div class="spinner hidden" id="spinner" aria-label="Automation running"></div>
           <ul class="mock-output" id="mockOutput" aria-live="polite"></ul>

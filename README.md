@@ -12,10 +12,8 @@ A static, GitHub Pages-ready dashboard for controlling an AI Email Automation sy
   - Automation run controls
   - Logs / output history
 - Save buttons for setup values using browser `localStorage`.
-- Simulated automation run with loading spinner and mock output:
-  - `Fetched 5 emails`
-  - `Summarized successfully`
-  - `Tasks saved`
+- Simulation mode with loading spinner and mock output when no backend URL is configured.
+- Optional backend URL setting for calling a real automation API from the dashboard.
 - Timestamped logs that persist in `localStorage`.
 - Plain HTML, CSS, and JavaScript with no heavy frontend framework.
 
@@ -83,33 +81,40 @@ The validation script confirms that the GitHub Pages entrypoint and local assets
 
 Because the dashboard is static and uses only `index.html`, `style.css`, and `script.js`, no build step is required.
 
+## Why the dashboard may show success without Sheet rows
+
+The GitHub Pages dashboard is a static frontend. If no backend URL is configured, clicking **Run Automation** only runs a simulation in the browser. It cannot directly read Gmail, call OpenAI securely, or write to Google Sheets. In simulation mode, no real emails are fetched and no Sheet rows are created.
+
+To create real Sheet rows, run the Python prototype separately or deploy a backend API and save its URL in the dashboard's **Run Automation** section.
+
 ## Future backend integration
 
-The dashboard is currently frontend-only. To connect it to the real automation system later:
+The dashboard is frontend-only unless a backend URL is configured. To connect it to the real automation system:
 
 1. Create a backend endpoint such as `POST /api/run-automation`.
 2. Move secret handling to the backend:
    - Store `OPENAI_API_KEY` in server-side environment variables or a secret manager.
    - Store Google OAuth tokens securely server-side.
    - Avoid sending raw API keys or OAuth credentials from the browser in production.
-3. Replace the simulated run in `script.js` with a `fetch()` call to your backend endpoint.
+3. Save that endpoint in the dashboard's **Backend API URL** field.
 4. Have the backend run the Gmail/OpenAI/Sheets workflow and return structured status updates.
 5. Stream or poll backend logs and render them in the Logs / Output panel.
 
 Example future frontend call:
 
 ```js
-const response = await fetch('/api/run-automation', {
+const response = await fetch(state.config.backendUrl, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ sheetId: state.config.sheetId }),
 });
 const result = await response.json();
+// Recommended response shape: { messages: ['Fetched 5 emails', 'Summarized successfully', 'Tasks saved'] }
 ```
 
 ## Current security note
 
-This dashboard stores values in browser `localStorage` only for local prototyping. Do not store production OpenAI API keys or Google OAuth credentials in client-side storage. Use a backend service with server-side secrets before handling real accounts or sensitive emails.
+This dashboard stores values in browser `localStorage` only for local prototyping. Do not store production OpenAI API keys or Google OAuth credentials in client-side storage. Use a backend service with server-side secrets before handling real accounts or sensitive emails. The browser should send only non-secret metadata, such as a target Sheet ID, to your backend.
 
 ## Python automation prototype
 

@@ -8,6 +8,7 @@ const defaultConfig = {
   gmailFileName: '',
   openaiKey: '',
   sheetId: '',
+  backendUrl: '',
 };
 
 const state = {
@@ -15,7 +16,11 @@ const state = {
   logs: loadLogs(),
 };
 
-const MOCK_AUTOMATION_STEPS = ['Fetched 5 emails', 'Summarized successfully', 'Tasks saved'];
+const SIMULATION_STEPS = [
+  'Simulation: would fetch 5 unread emails',
+  'Simulation: would summarize emails successfully',
+  'Simulation: would save extracted tasks to Google Sheets',
+];
 
 const gmailInput = document.querySelector('#gmailCredentials');
 const openaiInput = document.querySelector('#openaiKey');
@@ -26,11 +31,14 @@ const outputList = document.querySelector('#mockOutput');
 const logsList = document.querySelector('#logsList');
 const clearLogsButton = document.querySelector('#clearLogs');
 const configStatus = document.querySelector('#configStatus');
+const modeStatus = document.querySelector('#modeStatus');
+const backendUrlInput = document.querySelector('#backendUrl');
 
 // Initialize saved values and bind dashboard interactions.
 document.addEventListener('DOMContentLoaded', () => {
   openaiInput.value = state.config.openaiKey;
   sheetInput.value = state.config.sheetId;
+  backendUrlInput.value = state.config.backendUrl;
   renderLogs();
   renderConfigStatus();
   bindNavigationState();
@@ -64,6 +72,16 @@ document.querySelectorAll('[data-save]').forEach((button) => {
       );
     }
 
+    if (section === 'backend') {
+      state.config.backendUrl = normalizeBackendUrl(backendUrlInput.value);
+      backendUrlInput.value = state.config.backendUrl;
+      addLog(
+        state.config.backendUrl
+          ? `Saved backend automation URL: ${state.config.backendUrl}`
+          : 'Backend URL cleared. Dashboard will run in simulation mode.'
+      );
+    }
+
     saveConfig();
     renderConfigStatus();
   });
@@ -76,19 +94,19 @@ runButton.addEventListener('click', async () => {
   spinner.classList.remove('hidden');
   addLog('Automation run started.');
 
-  // Backend integration point: replace this simulation with fetch('/api/run-automation').
-  await wait(1100);
-
-  MOCK_AUTOMATION_STEPS.forEach((message, index) => {
-    const item = document.createElement('li');
-    item.textContent = message;
-    outputList.appendChild(item);
-    addLog(`${index + 1}/3 ${message}`);
-  });
-
-  spinner.classList.add('hidden');
-  runButton.disabled = false;
-  addLog('Automation run completed.');
+  try {
+    if (state.config.backendUrl) {
+      await runBackendAutomation();
+    } else {
+      await runSimulation();
+    }
+  } catch (error) {
+    addOutput(`Run failed: ${error.message}`);
+    addLog(`Run failed: ${error.message}`);
+  } finally {
+    spinner.classList.add('hidden');
+    runButton.disabled = false;
+  }
 });
 
 clearLogsButton.addEventListener('click', () => {
@@ -166,6 +184,9 @@ function renderConfigStatus() {
     state.config.sheetId,
   ].filter(Boolean).length;
   configStatus.textContent = `${completed}/3 setup items saved`;
+  modeStatus.textContent = state.config.backendUrl
+    ? 'Backend URL saved; Run Automation will call the backend.'
+    : 'No backend URL saved; Run Automation is simulation only.';
 }
 
 function bindNavigationState() {
@@ -176,6 +197,54 @@ function bindNavigationState() {
       link.classList.add('active');
     });
   });
+}
+
+function addOutput(message) {
+  const item = document.createElement('li');
+  item.textContent = message;
+  outputList.appendChild(item);
+}
+
+async function runSimulation() {
+  addLog('Simulation mode: no backend URL configured. No Gmail messages or Sheet rows will be changed.');
+  await wait(1100);
+
+  SIMULATION_STEPS.forEach((message, index) => {
+    addOutput(message);
+    addLog(`${index + 1}/3 ${message}`);
+  });
+
+  addLog('Simulation completed. Configure a backend URL to process real Gmail messages.');
+}
+
+async function runBackendAutomation() {
+  addLog(`Calling backend automation API: ${state.config.backendUrl}`);
+
+  // Backend integration point: the backend should own Gmail OAuth, OpenAI keys,
+  // Google Sheets credentials, and the actual email processing workflow.
+  const response = await fetch(state.config.backendUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheetId: state.config.sheetId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend returned ${response.status}`);
+  }
+
+  const result = await response.json();
+  const messages = Array.isArray(result.messages) && result.messages.length
+    ? result.messages
+    : ['Backend run completed. Check your Gmail/Sheets worker logs for details.'];
+
+  messages.forEach((message) => {
+    addOutput(message);
+    addLog(message);
+  });
+}
+
+function normalizeBackendUrl(value) {
+  return value.trim().replace(/\/$/, '');
 }
 
 function wait(ms) {
